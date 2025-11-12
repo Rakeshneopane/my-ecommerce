@@ -62,29 +62,43 @@ app.post("/api/admin/reset-indexes", async(req, res) => {
     }
 });
 
-const getProducts = async()=>{
-    try {
-    const products = await ProductsDB.find({}).populate("types").populate("section");
-    return products;  
-    } catch (error) {
-        throw error;
-    }
+const getProducts = async (filters = {}) => {
+  try {
+    const products = await ProductsDB.find(filters)
+      .populate("types")
+      .populate("section");
+    return products;
+  } catch (error) {
+    throw error;
+  }
 };
 
-app.get("/api/products", async(req,res)=>{
-    try {
-        const products = await getProducts();
-        if(products.length > 0){
-            res.json({data: products})
-        }
-        else{
-            res.status(204).json({data: [],error: "No data exists."})
-        }
-    } catch (error) {
-        res.status(500).json({error: "Error while fetching the data"})
+app.get("/api/products", async (req, res) => {
+  try {
+    // Read query params
+    const { category, section, types } = req.query;
+    const filter = {};
+
+    if (category) filter.category = category;
+    if (section) filter.section = section;
+    if (types) filter.types = types;
+
+    // Fetch via helper
+    const products = await getProducts(filter);
+
+    if (products.length > 0) {
+      return res.status(200).json({ data: products });
     }
-    
+
+    res.status(204).json({ data: [], error: "No data exists." });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to fetch products",
+      details: error.message,
+    });
+  }
 });
+
 
 const createProducts = async(data) =>{
     try {
@@ -106,7 +120,7 @@ const createProducts = async(data) =>{
                 existingSection = await new Section({ name: section.name }).save();
             }
 
-            const saveProducts = new Products({
+            const saveProducts = new ProductsDB({
                 ...products, 
                 types: existingType._id,
                 section: existingSection._id,}); 
@@ -278,26 +292,175 @@ app.post("/api/users/:id/addresses", async(req,res)=>{
     }
 })
 
-const getUser = async()=>{
+
+const getUser = async () => {
+  try {
+    const users = await User.find()
+      .populate({ path: "addresses", strictPopulate: false })
+      .populate({
+        path: "orders",
+        populate: [
+          { path: "address", strictPopulate: false },
+          { path: "item._id", model: "ProductsDB", strictPopulate: false }, 
+        ],
+      });
+
+    // Clean up null/invalid refs
+    const cleaned = users.map((u) => ({
+      ...u.toObject(),
+      addresses: (u.addresses || []).filter(Boolean),
+      orders: (u.orders || []).filter(Boolean),
+    }));
+
+    return cleaned;
+  } catch (error) {
+    console.error("❌ Error in getUser:", error);
+    throw error;
+  }
+};
+
+
+
+app.get("/api/users", async (req, res) => {
+  try {
+    const user = await getUser();
+    if (user && user.length > 0) {
+      return res.status(200).json({ user });
+    }
+    res.status(404).json({ error: "User not found" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to fetch the user.", details: error.message });
+  }
+});
+
+const updateProducts = async(productId, updatedData)=>{
     try {
-        const user = await User.find().populate("addresses").populate({
-            path: "orders",
-            populate: [{path: "address"},{path: "item._id"}],
-        });
-        return user;
+        if(updatedData.types?.name){
+            let existingTypes = await Types.findOne({ name: updatedData.types.name});
+            if(!existingTypes){
+                existingTypes = await new Types({name: updatedData.types.name}).save();
+            }
+            updatedData.types = existingTypes._id;
+        }
+         if(updatedData.section?.name){
+            let existingSection = await Section.findOne({ name: updatedData.section.name});
+            if(!existingSection){
+                existingSection = await new Section({name: updatedData.section.name}).save();
+            }
+            updatedData.section = existingSection._id;
+        }
+        const updateProduct = await ProductsDB.findByIdAndUpdate(productId, updatedData, {new: true}).populate("types").populate("section");
+        return updateProduct; 
+
     } catch (error) {
         throw error;
     }
 }
 
-app.get("/api/user", async(req,res)=>{
+app.post("/api/products/:productId", async(req,res)=>{
     try {
-        const user = await getUser();
-        if(user){
-            return res.status(200).json({user: user});
+        const productId = req.params.productId;
+        if(Object.keys(req.body).length === 0){
+            return res.status(400).json({error: "No update data provided"});
         }
-        res.status(404).json({error: "User not found"});
+        const updatedData = await updateProducts(productId, req.body);
+        res.status(200).json({message: "Product updated successfully", product: updatedData})
     } catch (error) {
-        res.status(500).json({error: "Failed to fetch the user."})
+        res.status(500).json({error: "Failed to update the products"})
     }
 })
+
+
+const getUserById = async (userId) => {
+  const user = await User.findById(userId)
+    .populate({ path: "addresses", strictPopulate: false })
+    .populate({
+      path: "orders",
+      populate: [
+        { path: "address", strictPopulate: false },
+        { path: "item._id", model: "ProductsDB", strictPopulate: false },
+      ],
+    });
+
+  if (!user) return null;
+
+  return {
+    ...user.toObject(),
+    addresses: (user.addresses || []).filter(Boolean),
+    orders: (user.orders || []).filter(Boolean),
+  };
+};
+
+app.get("/api/user/:id", async (req, res) => {
+  try {
+    const user = await getUserById(req.params.id);
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.status(200).json({ user });
+  } catch (error) {
+    console.error("❌ Error in /api/user/:id:", error);
+    res.status(500).json({ error: "Failed to fetch user", details: error.message });
+  }
+});
+
+
+const deleteProduct = async (productId) => {
+  try {
+    const deleted = await ProductsDB.findByIdAndDelete(productId);
+    return deleted;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+app.delete("/api/products/:productId", async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    const deleted = await deleteProduct(productId);
+    if (!deleted) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    res.status(200).json({ message: "Product deleted successfully", product: deleted });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete product", details: error.message });
+  }
+});
+
+
+const deleteUser = async (userId) => {
+  try {
+    // Remove all addresses belonging to the user
+    await Address.deleteMany({ user: userId });
+
+    // Remove all orders belonging to the user
+    await Orders.deleteMany({ user: userId });
+
+    // Finally remove the user
+    const deletedUser = await User.findByIdAndDelete(userId);
+
+    return deletedUser;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+app.delete("/api/user/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedUser = await deleteUser(id);
+
+    if (!deletedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({ message: "User deleted successfully", user: deletedUser });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete user", details: error.message });
+  }
+});
+

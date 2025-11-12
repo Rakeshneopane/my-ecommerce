@@ -25,6 +25,7 @@ const ProductSchema = new mongoose.Schema({
     stock: {
         type: Number,
         required: true,
+        min: 0,
     },
     section: {
         type:  mongoose.Schema.Types.ObjectId,
@@ -36,6 +37,10 @@ const ProductSchema = new mongoose.Schema({
         ref: "Types",
         required: true,
     },
+    images:{
+        type: [String],
+        required: true,
+    }
 },
 {
     timestamps: true
