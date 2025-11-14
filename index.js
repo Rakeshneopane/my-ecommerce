@@ -475,12 +475,13 @@ app.get("/sections", async (req, res) => {
 
 app.get("/types", async (req, res) => {
   try {
-    const types = await Types.find().select("name images");
+    const types = await Types.find().select("name images section");
     res.json({ types });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 app.post("/sections/:id/image", async (req, res) => {
   try {
