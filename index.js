@@ -76,10 +76,9 @@ const getProducts = async (filters = {}) => {
 app.get("/api/products", async (req, res) => {
   try {
     // Read query params
-    const { category, section, types } = req.query;
+    const { section, types } = req.query;
     const filter = {};
 
-    if (category) filter.category = category;
     if (section) filter.section = section;
     if (types) filter.types = types;
 
@@ -464,3 +463,110 @@ app.delete("/api/user/:id", async (req, res) => {
   }
 });
 
+
+app.get("/sections", async (req, res) => {
+  try {
+    const sections = await Section.find().select("name images");
+    res.json({ sections });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/types", async (req, res) => {
+  try {
+    const types = await Types.find().select("name images");
+    res.json({ types });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/sections/:id/image", async (req, res) => {
+  try {
+    const { image } = req.body;
+
+    if (!image) return res.status(400).json({ error: "Image URL required" });
+
+    const updated = await Section.findByIdAndUpdate(
+      req.params.id,
+      { images: [image] },
+      { new: true }
+    );
+
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/types/:id/image", async (req, res) => {
+  try {
+    const { image } = req.body;
+
+    if (!image) return res.status(400).json({ error: "Image URL required" });
+
+    const updated = await Types.findByIdAndUpdate(
+      req.params.id,
+      { images: [image] },
+      { new: true }
+    );
+
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// async function seed() {
+ 
+
+  // 1️⃣ Hard-coded SECTION IMAGES
+//   const sections = [
+//     { name: "Men", images: ["https://media.gettyimages.com/id/1141653922/photo/the-three-crew-members-of-nasas-apollo-11-lunar-landing-mission-pose-for-a-group-portrait-a.jpg?s=612x612&w=0&k=20&c=Aw7OhPFLeFfEaOjuNribMjCpSnIKMK-vmD8iSS0OawM="] },
+//     { name: "Women", images: ["https://media.gettyimages.com/id/1205998357/photo/a-woman-leans-back-resting-on-her-right-elbow-her-left-leg-on-her-right-knee-wearing-a.jpg?s=612x612&w=0&k=20&c=etBVsQ8pDjrmA5VgxSXALTi6UpD1DxgGvei-QeR4QHk="] },
+//     { name: "Kids", images: ["https://media.gettyimages.com/id/3249826/photo/boys-shoes-original-publication-picture-post-7884-childrens-shoes-unpub.jpg?s=612x612&w=0&k=20&c=aq7aBf34Tm2JlOhLmyKxQgAFXwEz0Gzzs8MVuiZdcsQ="] },
+//     { name: "Accessories", images: ["https://media.gettyimages.com/id/2160351912/photo/autodromo-nazionale-monza-italy-helen-stewart-reflected-in-husband-jackies-sunglasses-during.jpg?s=612x612&w=0&k=20&c=gq4FYi6MF7PUtXBzCXqkV6f4CamgCm0Kl7pHSNrmL2I="] },
+//     { name: "Electronics", images: ["https://media.gettyimages.com/id/1172712803/photo/a-group-of-black-friday-online-shopping-purchases-photographed-in-delivery-boxes-filled-with.jpg?s=612x612&w=0&k=20&c=m_feq-w9iaUzMtlr1gJHL9HV6Zi_wBq2s1ilBrXS7MA="] },
+//     { name: "Home", images: ["https://media.gettyimages.com/id/514977546/photo/with-a-flip-of-this-models-wrist-clothes-are-washed-rinsed-and-dried-in-one-continuous.jpg?s=612x612&w=0&k=20&c=56Vh-7d3ceLaaGUBjxHlD2lRFCFIaTCJE7rF4GG-QCo="] },
+//   ];
+
+//   // 2️⃣ Hard-coded TYPES IMAGES
+//   const types = [
+//     { name: "Shoes", images: ["https://media.gettyimages.com/id/558933471/photo/a-young-model-poses-with-an-array-of-hawkins-boots-circa-1990.jpg?s=612x612&w=0&k=20&c=s3t-o9inycTl-fZtr7bQcm4JRgk0UxdZS44V_T3GCdE="] },
+//     { name: "Smartwatch", images: ["https://media.gettyimages.com/id/1172712775/photo/an-apple-watch-series-5-smartwatch-taken-on-september-20-2019.jpg?s=612x612&w=0&k=20&c=6o5SPRGyhBCP5sClsRsTMVXSM-FIzTuYUgi3RgrCXVc="] },
+//     { name: "Jeans", images: ["https://media.gettyimages.com/id/52112099/photo/lech-austria-diana-princess-of-wales-on-a-skiing-holiday-in-lech-austria-with-prince-william.jpg?s=612x612&w=0&k=20&c=f5CBJQFNkZEh37YXHcWh6doTEjvPWsMY710lxpDcrYQ="] },
+//     { name: "Smartphone", images: ["https://media.gettyimages.com/id/1281773960/photo/london-england-the-new-iphone-12-and-iphone-12-pro-on-display-during-launch-day-on-october-23.jpg?s=612x612&w=0&k=20&c=3gPtT8DA6zoSG-pVtpvu0lerbRg0eY5MBeNsb7wH7gc="] },
+//     { name: "Headphones", images: ["https://media.gettyimages.com/id/3438129/photo/christine-harris-wearing-auralgard-ii-ear-defenders-during-an-exhibition-at-the-design-centre-in.jpg?s=612x612&w=0&k=20&c=5BqJh6hZCWahoclJAGnWmlKLZxyA4lNxsAOySxZFelM="] },
+//     { name: "Dress", images: ["https://media.gettyimages.com/id/2204455005/photo/paris-france-violet-grace-wears-pale-yellow-ruffled-dress-boots-sunglasses-outside-the.jpg?s=612x612&w=0&k=20&c=JXgTlz0IgZr2PR-MSA-xr5R9_-Ij1zbCYJN2tJm6Sfk="] },
+//     { name: "Laptop", images: ["https://media.gettyimages.com/id/1139259998/photo/detail-of-someone-typing-on-the-keyboard-of-an-apple-macbook-pro-laptop-computer-in-a-cafe.jpg?s=612x612&w=0&k=20&c=AKL6aJaQaDAwl81pUGtDifE8ivNwu9ttwRdtAXaIwtU="] },
+//     { name: "Sportswear", images: ["https://media.gettyimages.com/id/52440174/photo/canadian-professional-hockey-player-lorne-gump-worsley-of-the-new-york-rangers-poses-in-the.jpg?s=612x612&w=0&k=20&c=KuP0Cijo6qfMbP31aSJvyG8-BZXtVpdl96Lv46Dn4qE="] },
+//     { name: "Handbag", images: ["https://media.gettyimages.com/id/515103076/photo/murray-resnick-the-president-of-the-firm-gay-pauley-is-seen-here-surrounded-with-every-type-of.jpg?s=612x612&w=0&k=20&c=1aS7IpdnGnC5jEdPfEKk8FYKyH0uEqTcOxbh9SQwv2o="] },
+//     { name: "Console", images: ["https://media.gettyimages.com/id/90774619/photo/japan-super-nintendo-entertainment-system-1992-computer-games-console-with-alien-3-game.jpg?s=612x612&w=0&k=20&c=Xnegnu__vvO8c8wbFMKW3LPZA9UH5FaTLF3tibE1wvA="] },
+//     { name: "Sunglasses", images: ["https://media.gettyimages.com/id/52104818/photo/abu-dhabi-united-arab-emirates-the-princess-of-wales-in-abu-dhabi-during-her-gulf-tour.jpg?s=612x612&w=0&k=20&c=S79Y5FP_-BybB1xBKsUitta_HsKIWszPeIeAjFbj7II="] },
+//     { name: "Baby Clothes", images: ["https://media.gettyimages.com/id/584553994/photo/colorado-springs-co-republican-presidential-nominee-donald-trump-reacts-to-the-cries-of-three.jpg?s=612x612&w=0&k=20&c=FdBcTVaAzV5tWuWWG9Kp4PGsUKpEPTW1pPQkIvfMBs8="] },
+//     { name: "Toys", images: ["https://media.gettyimages.com/id/50477625/photo/mr-potato-head-toy-w-detachable-accessories.jpg?s=612x612&w=0&k=20&c=YeB9XylRFgs4IYFM2RnR1Os3-igTo3t4wJQ2mpzLPPs="] },
+//     { name: "Activewear", images: ["https://media.gettyimages.com/id/1190827607/photo/diana-princess-of-wales-opens-the-womens-international-tennis-association-european-office-at.jpg?s=612x612&w=0&k=20&c=fn4sk7QB81fblEMZUEUL-BQ6mcbiRs1yXC5bbhe1lyg="] },
+//     { name: "Appliance", images: ["https://media.gettyimages.com/id/98071044/photo/marin-city-ca-an-energy-star-label-is-displayed-on-a-brand-new-washing-machine-at-a-best-buy.jpg?s=612x612&w=0&k=20&c=Nnh2Ygu1lW2Ga59bN-cPK1CLWJ8dlSm0YpenRMFryfQ="] },
+//     { name: "Polo", images: ["https://media.gettyimages.com/id/530794730/photo/1953-publicity-photograph-of-famed-actor-marlon-brando-leaning-against-a-white-wall.jpg?s=612x612&w=0&k=20&c=ji9JMfOdlld5FR9k92VhXya9Euy4yy3vSxcXUcQgasc="] },
+//     { name: "Watch", images: ["https://media.gettyimages.com/id/2207466225/photo/new-rolex-land-dweller-model-watches-are-seen-in-a-showcase-of-swiss-watch-designer-and.jpg?s=612x612&w=0&k=20&c=bBDsAWP-K80_9bR85g8v9HVlxd0-WmUY0BFlxuX49C4="] },
+//     { name: "Camera", images: ["https://media.gettyimages.com/id/106930323/photo/a-b-m-16mm-silent-pro-movie-camera-manufactured-by-j-a-maurer-inc-of-new-york-circa-1940-it-is.jpg?s=612x612&w=0&k=20&c=35ql_-0x7qczejRLlvUf4YK0Di3Gf-gdPWW7c6AZDqo="] },
+//     { name: "T-Shirt", images: ["https://media.gettyimages.com/id/141257662/photo/paul-newman-us-actor-wearing-a-white-t-shirt-in-a-publicity-still-issued-for-the-film-the.jpg?s=612x612&w=0&k=20&c=MTLNgCDLOQBTGRkIz2uFCsq65wS6yKEYYllEN3G64S4="] },
+//     { name: "Pant", images: ["https://media.gettyimages.com/id/514689286/photo/6-5-1948-new-york-ny-star-of-stage-and-screen-katharine-hepburn-becomingly-clad-in-slacks.jpg?s=612x612&w=0&k=20&c=C5BOQaQOVK_6W1GsQPtW5HnVz4VuLECT30ErXnRk-r0="] },
+//     { name: "Jacket", images: ["https://media.gettyimages.com/id/1282563440/photo/bandar-seri-begawan-brunei-american-singer-songwriter-and-dancer-michael-jackson-performs-on.jpg?s=612x612&w=0&k=20&c=sP8JZTOE3MUvGadIuvLs698cM3AwSVIT7iWmxch7P1s="] },
+//   ];
+
+//   // 3️⃣ Remove previous seeds (optional)
+//   await Section.deleteMany({});
+//   await Types.deleteMany({});
+
+//   // 4️⃣ Insert fresh data
+//   await Section.insertMany(sections);
+//   await Types.insertMany(types);
+
+//   console.log("Sections & Types seeded successfully!");
+//   // mongoose.disconnect();
+// }
+
+// seed();

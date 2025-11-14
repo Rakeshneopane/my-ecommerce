@@ -5,6 +5,10 @@ const SectionSchema = new mongoose.Schema({
         type: String,
         required : true,
         unique: true,
+    },
+    images : {
+        type: [String],
+        required: true,
     }
 },{
     timestamps: true,
