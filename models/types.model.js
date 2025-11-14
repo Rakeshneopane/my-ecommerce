@@ -1,3 +1,5 @@
+const mongoose = require("mongoose");
+
 const TypesSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -14,3 +16,5 @@ const TypesSchema = new mongoose.Schema({
     required: true,   
   }
 });
+
+module.exports = mongoose.model("Types", TypesSchema);
