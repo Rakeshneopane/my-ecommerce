@@ -571,3 +571,54 @@ app.post("/types/:id/image", async (req, res) => {
 // }
 
 // seed();
+
+// app.post("/admin/fix-types-section", async (req, res) => {
+//   try {
+//     const products = await ProductsDB.find().populate("section").populate("types");
+
+//     for (const p of products) {
+//       if (p.types && p.section) {
+//         await Types.findByIdAndUpdate(
+//           p.types._id,
+//           { section: p.section._id }
+//         );
+//       }
+//     }
+
+//     res.json({ message: "Types section field updated successfully!" });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const user = await User.findOne({ email })
+      .populate({ path: "addresses", strictPopulate: false })
+      .populate({
+        path: "orders",
+        populate: [
+          { path: "address", strictPopulate: false },
+          { path: "item._id", model: "ProductsDB", strictPopulate: false },
+        ],
+      });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    return res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({
+      error: "Login failed",
+      details: error.message,
+    });
+  }
+});
+
