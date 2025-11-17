@@ -334,29 +334,84 @@ app.get("/api/users", async (req, res) => {
   }
 });
 
-const updateProducts = async(productId, updatedData)=>{
-    try {
-        if(updatedData.types?.name){
-            let existingTypes = await Types.findOne({ name: updatedData.types.name});
-            if(!existingTypes){
-                existingTypes = await new Types({name: updatedData.types.name}).save();
-            }
-            updatedData.types = existingTypes._id;
-        }
-         if(updatedData.section?.name){
-            let existingSection = await Section.findOne({ name: updatedData.section.name});
-            if(!existingSection){
-                existingSection = await new Section({name: updatedData.section.name}).save();
-            }
-            updatedData.section = existingSection._id;
-        }
-        const updateProduct = await ProductsDB.findByIdAndUpdate(productId, updatedData, {new: true}).populate("types").populate("section");
-        return updateProduct; 
+const updateProducts = async (productId, updatedData) => {
+  try {
+    const newData = { ...updatedData };
 
-    } catch (error) {
-        throw error;
+    // -------------------------
+    // 1. HANDLE SECTION
+    // -------------------------
+    if (updatedData.section?.name) {
+      let existingSection = await Section.findOne({ name: updatedData.section.name });
+
+      // Create new section (with at least 1 empty image)
+      if (!existingSection) {
+        existingSection = await new Section({
+          name: updatedData.section.name,
+          images: updatedData.section.images || [""],
+        }).save();
+      }
+
+      newData.section = existingSection._id;
     }
-}
+
+    // -------------------------
+    // 2. HANDLE TYPES
+    // -------------------------
+    if (updatedData.types?.name) {
+      // Ensure section exists before creating type!
+      let parentSection = null;
+
+      // If section updated in same request, use that
+      if (newData.section) {
+        parentSection = await Section.findById(newData.section);
+      } else {
+        // Else fallback to existing product section
+        const existingProduct = await ProductsDB.findById(productId).populate("section");
+        parentSection = existingProduct.section;
+      }
+
+      if (!parentSection) {
+        throw new Error("Cannot create type because parent section does not exist.");
+      }
+
+      // Check for existing type
+      let existingType = await Types.findOne({
+        name: updatedData.types.name,
+        section: parentSection._id,
+      });
+
+      // If type does not exist → create it
+      if (!existingType) {
+        existingType = await new Types({
+          name: updatedData.types.name,
+          section: parentSection._id,
+          images: updatedData.types.images || [""],
+        }).save();
+      }
+
+      newData.types = existingType._id;
+    }
+
+    // -------------------------
+    // 3. UPDATE PRODUCT
+    // -------------------------
+    const updatedProduct = await ProductsDB.findByIdAndUpdate(
+      productId,
+      newData,
+      { new: true }
+    )
+      .populate("types")
+      .populate("section");
+
+    return updatedProduct;
+
+  } catch (error) {
+    console.error("❌ updateProducts error:", error);
+    throw error;
+  }
+};
+
 
 app.post("/api/products/:productId", async(req,res)=>{
     try {
