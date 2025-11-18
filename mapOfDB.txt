@@ -1,0 +1,75 @@
+                    ┌──────────────────┐
+                    │     Section      │
+                    │------------------│
+                    │ _id (ObjectId)   │
+                    │ name (String)    │
+                    │ images [String]  │
+                    └────────┬─────────┘
+                             ▲
+                             │ 1 Section
+                             │ has MANY Types
+                             │ (section ref)
+                             │
+                    ┌────────┴─────────┐
+                    │      Types        │
+                    │-------------------│
+                    │ _id (ObjectId)    │
+                    │ name (String)     │
+                    │ images [String]   │
+                    │ section (ObjectId)│───┐
+                    └────────┬──────────┘   │
+                             ▲               │
+                             │ 1 Type        │
+                             │ used BY MANY  │
+                             │ Products      │
+                             │ (types ref)   │
+                             │               │
+                    ┌────────┴──────────────┴──────────┐
+                    │             Products              │
+                    │-----------------------------------│
+                    │ _id (ObjectId)                    │
+                    │ title, price, category, rating…   │
+                    │ images [String]                   │
+                    │ section (ObjectId → Section)      │
+                    │ types   (ObjectId → Types)        │
+                    └───────────┬───────────────────────┘
+                                │
+                                │ Many Products referenced
+                                │ inside Order.item array
+                                │
+         ┌──────────────────────┴───────────────────────┐
+         │                     Orders                    │
+         │-----------------------------------------------│
+         │ _id (ObjectId)                                │
+         │ user (ObjectId → User)                        │
+         │ address (ObjectId → Address)                  │
+         │ payment { method, status }                    │
+         │ item: [                                       │
+         │   {                                           │
+         │     _id (ObjectId → Products),                │
+         │     title, price, quantity                    │
+         │   }                                           │
+         │ ]                                             │
+         └───────────────────────┬───────────────────────┘
+                                 │
+                   User has many Orders
+                                 │
+                  ┌──────────────┴───────────────┐
+                  │              User             │
+                  │-------------------------------│
+                  │ _id (ObjectId)                │
+                  │ name, email, phone, gender... │
+                  │ addresses: [ObjectId → Address]──┐
+                  │ orders:    [ObjectId → Orders ]  │
+                  └──────────────┬───────────────────┘
+                                 │
+                                 │ User has many Addresses
+                                 │
+                  ┌──────────────┴──────────────┐
+                  │           Address            │
+                  │------------------------------│
+                  │ _id (ObjectId)               │
+                  │ user (ObjectId → User)       │
+                  │ area, city, state, pincode   │
+                  │ addressType (Home/Work/Other)│
+                  └──────────────────────────────┘

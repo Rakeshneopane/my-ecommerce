@@ -677,3 +677,52 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
+// Create Section
+app.post("/sections", async (req, res) => {
+  try {
+    const { name, images } = req.body;
+
+    if (!name) return res.status(400).json({ error: "Section name required" });
+
+    let existing = await Section.findOne({ name });
+    if (existing) return res.status(400).json({ error: "Section already exists" });
+
+    const newSection = await new Section({
+      name,
+      images: images?.length ? images : [""]
+    }).save();
+
+    res.status(201).json({ section: newSection });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create Type
+app.post("/types", async (req, res) => {
+  try {
+    const { name, section, images } = req.body;
+
+    if (!name || !section) {
+      return res.status(400).json({ error: "Type name & section are required" });
+    }
+
+    const sectionExists = await Section.findById(section);
+    if (!sectionExists)
+      return res.status(404).json({ error: "Section not found" });
+
+    let existing = await Types.findOne({ name, section });
+    if (existing) return res.status(400).json({ error: "Type already exists" });
+
+    const newType = await new Types({
+      name,
+      section,
+      images: images?.length ? images : [""]
+    }).save();
+
+    res.status(201).json({ type: newType });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
