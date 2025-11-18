@@ -98,40 +98,45 @@ app.get("/api/products", async (req, res) => {
   }
 });
 
+const createProducts = async (data) => {
+  try {
+    const result = Array.isArray(data) ? data : [data];
+    const allSaved = [];
 
-const createProducts = async(data) =>{
-    try {
+    for (const item of result) {
+      const { types, section, ...productFields } = item;
 
-        const result = Array.isArray(data) ? data: [data];
-        const allSaved = [];
-        
-        for( const item of result ){
+      // 1️⃣ Validate Section ID
+      const existingSection = await Section.findById(section);
+      if (!existingSection) {
+        throw new Error(`Invalid section ID: ${section}`);
+      }
 
-            const {  types, section, ...products } = item;
+      // 2️⃣ Validate Type ID
+      const existingType = await Types.findById(types);
+      if (!existingType) {
+        throw new Error(`Invalid type ID: ${types}`);
+      }
 
-            let existingType = await Types.findOne({ name: types.name });
-            if (!existingType) {
-                existingType = await new Types({ name: types.name }).save();
-            }
+      // 3️⃣ Create product with existing section/type
+      const newProduct = await new ProductsDB({
+        ...productFields,
+        section,
+        types,
+      }).save();
 
-            let existingSection = await Section.findOne({ name: section.name });
-            if (!existingSection) {
-                existingSection = await new Section({ name: section.name }).save();
-            }
-
-            const saveProducts = new ProductsDB({
-                ...products, 
-                types: existingType._id,
-                section: existingSection._id,}); 
-            const savedProducts = await saveProducts.save();
-
-            allSaved.push({product: savedProducts, type: existingType, section: existingSection})
-        }
-        return allSaved;
-    } catch (error) {
-        throw error;
+      allSaved.push({
+        product: newProduct,
+        section: existingSection,
+        type: existingType,
+      });
     }
-}
+
+    return allSaved;
+  } catch (error) {
+    throw error;
+  }
+};
 
 app.post("/api/create-products", async(req,res)=>{
     try {
