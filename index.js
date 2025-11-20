@@ -769,3 +769,37 @@ app.delete("/api/users/:userId/addresses/:addressId", async (req, res) => {
     });
   }
 });
+// UPDATE address using POST (not PUT)
+app.post("/api/users/:userId/addresses/:addressId", async (req, res) => {
+  try {
+    const { userId, addressId } = req.params;
+
+    // ensure user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // update address
+    const updatedAddress = await Address.findByIdAndUpdate(
+      addressId,
+      req.body,
+      { new: true }
+    );
+
+    if (!updatedAddress) {
+      return res.status(404).json({ error: "Address not found" });
+    }
+
+    return res.json({
+      message: "Address updated successfully",
+      address: updatedAddress,
+    });
+  } catch (error) {
+    console.error("❌ Update Address Error:", error);
+    res.status(500).json({
+      error: "Failed to update address",
+      details: error.message,
+    });
+  }
+});
