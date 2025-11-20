@@ -731,3 +731,41 @@ app.post("/types", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// DELETE an address
+app.delete("/api/users/:userId/addresses/:addressId", async (req, res) => {
+  try {
+    const { userId, addressId } = req.params;
+
+    const user = await User.findById(userId).populate("addresses");
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Delete from Address collection
+    const deletedAddress = await Address.findByIdAndDelete(addressId);
+    if (!deletedAddress) {
+      return res.status(404).json({ error: "Address not found" });
+    }
+
+    // Safely remove reference from user.addresses
+    user.addresses = user.addresses.filter((addr) => {
+      const id = addr._id ? addr._id.toString() : addr.toString();
+      return id !== addressId;
+    });
+
+    await user.save();
+
+    return res.json({
+      message: "Address deleted successfully",
+      addresses: user.addresses,
+    });
+  } catch (error) {
+    console.error("❌ Delete Address Error:", error);
+    res.status(500).json({
+      error: "Failed to delete address",
+      details: error.message,
+    });
+  }
+});
